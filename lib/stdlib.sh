@@ -80,6 +80,14 @@ export_env() {
   local env_dir=${1:-$ENV_DIR}
   local whitelist=${2:-''}
   local blacklist="$(_env_blacklist $3)"
+
+  ##
+  for filename in $env_dir/*
+  do
+    echo $(basename $filename)=$(cat $filename)
+  done;
+  ##
+
   if [ -d "$env_dir" ]; then
     for e in $(ls $env_dir); do
       echo "$e" | grep -E "$whitelist" | grep -qvE "$blacklist" &&
