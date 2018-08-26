@@ -7,28 +7,28 @@ console.log( process.env );
 // ==============================================
 
 // Salesforce client
-const jsforce = require('jsforce');
+const jsforce = require( 'jsforce' );
 
 // Web server for handling requests
-const express = require('express');
+const express = require( 'express' );
 
 // utility for parsing and formatting urls
-const url = require('url');
+const url = require( 'url' );
 
-// general utility, originally for promisifying the exec library
-const util = require('util');
+// general utility, for promisifying the exec library
+const util = require( 'util' );
 
 // for executing command line programs (e.g. Salesforce CLI)
 // https://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback
 // https://stackoverflow.com/questions/20643470/execute-a-command-line-binary-with-node-js
-const exec = util.promisify(require('child_process').exec);
+const exec = util.promisify( require( 'child_process' ).exec );
 
 // file system utilities
-const fs = require('fs');
+const fs = require( 'fs' );
 const fsp = fs.promises;
 
 // operating system utilities
-const os = require('os');
+const os = require( 'os' );
 
 
 // Salesforce OAuth Settings (reusable)
@@ -82,9 +82,9 @@ app.get( '/', function( req, res ) {
  */
 app.get( '/oauth2/callback', function( req, res ) {
 
-    // in testing, browsers would send a duplicate request after 5 seconds
+    // In testing, browsers would send a duplicate request after 5 seconds
     // if this redirection did not respond in time.
-    // to avoid having a duplicate request we must tell the browser to wait longer
+    // To avoid having a duplicate request, we must tell the browser to wait longer.
     // https://github.com/expressjs/express/issues/2512
     req.connection.setTimeout( 1000 * 60 * 10 ); // ten minutes
 
@@ -120,43 +120,47 @@ app.get( '/oauth2/callback', function( req, res ) {
 
                 try {
 
-                    var sfdxAuthUrlFilePath = os.tmpdir() + '/sfdxurl';
+                    var sfdxAuthUrlFilePath = os.tmpdir() + '/sfdxurl.txt';
                     var sfdxAuthUrlFileData = process.env.SFDX_AUTH_URL;
+
+                    console.log( 'sfdxAuthUrlFilePath=' + sfdxAuthUrlFilePath );
+                    console.log( 'sfdxAuthUrlFileData=' + sfdxAuthUrlFileData );
 
                     Promise.resolve().then( function() {
 
-                        // if ( !process.env.SFDX_AUTH_URL ) {
-                        //     return new Promise( function( resolve, reject ) {
-                        //         fsp.readFile( )
-                        //     });
-                        // } else {
-                        //     sfdxAuthUrlFileData = process.env.SFDX_AUTH_URL;
-                        // }
+                        if ( !sfdxAuthUrlFileData ) {
+                            // for review apps, the 'bin/compile' script of the buildpack
+                            // writes the sfdx auth url for the scratch org in a file named
+                            // named after the heroku app with a 'ra-' prefix
+                            console.log( 'reading buildpack created file for sfdx auth url' );
+                            return fsp.readFile( `ra-${process.env.HEROKU_APP_NAME}`, { 'encoding': 'UTF-8' } ).then( function( fileData ) {
+                                sfdxAuthUrlFileData = fileData;
+                            });
+                        }
 
                     }).then( function() {
 
-                        console.log( 'opening sfdx auth url file path', sfdxAuthUrlFilePath );
+                        console.log( 'opening sfdx auth url for writing: ' + sfdxAuthUrlFilePath );
                         return fsp.open( sfdxAuthUrlFilePath, 'w' );
 
                     }).then( function( fileHandle ) {
 
-                        console.log( 'fileHandle', fileHandle );
-                        console.log( 'writing sfdx auth url', sfdxAuthUrlFileData );
+                        console.log( 'writing sfdx auth url: ' + sfdxAuthUrlFileData );
                         return fileHandle.writeFile( sfdxAuthUrlFileData );
 
-                    }).then( function( result ) {
+                    }).then( function() {
 
-                        console.log( 'writeFile result', result );
+                        console.log( 'storing sfdx auth url with cli' );
                         return exec( 'sfdx force:auth:sfdxurl:store --setalias sfdxorg --sfdxurlfile "' + sfdxAuthUrlFilePath + '" --noprompt --json' );
 
                     }).then( function( result ) {
 
-                        console.log( 'force:auth:sfdxurl:store result', result );
+                        console.log( 'getting login url with cli' );
                         return exec( 'sfdx force:org:open --targetusername sfdxorg --urlonly --json' );
 
                     }).then( function( result ) {
 
-                        console.log( 'force:org:open result', result );
+                        console.log( result );
                         var jsonResult = JSON.parse( result.stdout );
                         res.redirect( jsonResult.result.url );
 
