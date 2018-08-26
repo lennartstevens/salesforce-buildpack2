@@ -1,8 +1,5 @@
 'use strict';
 
-console.log('inside app.js v12');
-console.log( process.env );
-
 // ==============================================
 // Load libraries
 // ==============================================
@@ -27,6 +24,9 @@ const exec = util.promisify(require('child_process').exec);
 // file system utilities
 const fs = require('fs');
 const fsp = fs.promises;
+
+// operating system-related utilities
+const os = require('os');
 
 
 // Salesforce OAuth Settings (reusable)
