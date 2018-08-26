@@ -253,7 +253,7 @@ release: ./"$vendorDir"/release.sh \"$TARGET_SCRATCH_ORG_ALIAS\" \"$SFDX_PACKAGE
 web: node ./"$vendorDir"/app.js
 " > $BUILD_DIR/Procfile
 
-  debug "Generated Procfile that will deploy source in release phase and redirect to open-path in web phase"
+  debug "Generated Procfile that will deploy source in release phase"
 fi
 
 # copy scripts needed for release phase
@@ -268,9 +268,9 @@ cp $BP_DIR/lib/sfdx.sh $BUILD_DIR/"$vendorDir"/
 debug "stdlib.sh to $BUILD_DIR/"$vendorDir"/stdlib.sh"
 cp $BP_DIR/lib/stdlib.sh $BUILD_DIR/"$vendorDir"/
 debug "app.js to $BUILD_DIR/"$vendorDir"/app.js"
-cp $BP_DIR/lib/app.js $BUILD_DIR/"$vendorDir"/
+cp $BP_DIR/app/app.js $BUILD_DIR/"$vendorDir"/
 debug "package.json to $BUILD_DIR/package.json"
-cp $BP_DIR/lib/package.json $BUILD_DIR/
+cp $BP_DIR/app/package.json $BUILD_DIR/
 
 # TODO: can we be smart and delete or replace .profile during the appropriate
 # stage so that the release phase is faster?

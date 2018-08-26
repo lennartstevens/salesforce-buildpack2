@@ -1,5 +1,5 @@
 {
-  "name": "salesforce-dx-pipeline-sample2",
+  "name": "salesforce-buildpack",
   "version": "1.0.0",
   "main": "./vendor/sfdx/app.js",
   "scripts": {

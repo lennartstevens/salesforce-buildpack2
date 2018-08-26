@@ -1,19 +1,32 @@
 'use strict';
 
-console.log('inside app.js');
-console.log('env',process.env);
+console.log('inside app.js v12');
+console.log( process.env );
 
 // ==============================================
 // Load libraries
 // ==============================================
 
-const jsforce  = require('jsforce');
-const express  = require('express');
-const url      = require('url');
-const util     = require('util');
+// Salesforce client
+const jsforce = require('jsforce');
+
+// Web server for handling requests
+const express = require('express');
+
+// utility for parsing and formatting urls
+const url = require('url');
+
+// general utility, originally for promisifying the exec library
+const util = require('util');
+
+// for executing command line programs (e.g. Salesforce CLI)
 // https://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback
 // https://stackoverflow.com/questions/20643470/execute-a-command-line-binary-with-node-js
-const exec     = util.promisify(require('child_process').exec);
+const exec = util.promisify(require('child_process').exec);
+
+// file system utilities
+const fs = require('fs');
+const fsp = fs.promises;
 
 
 // Salesforce OAuth Settings (reusable)
@@ -35,16 +48,21 @@ var app = express();
 
 app.listen( process.env.PORT || 8080 );
 
+/**
+ * Handle when Heroku app base url is requested.
+ * Will redirect to oauth endpoint to confirm user's identity.
+ * Successful authorization will redirect to the /oauth2/callback endpoint
+ * of one of the Heroku apps in the pipeline, it might not be *this* one.
+ *
+ * For example,
+ *      If navigate to the Heroku app url for a "review app", this code
+ *      will redirect to Salesforce for oauth authorization, which always redirects
+ *      back to one of the Heroku apps configured in the Connected App's callback url.
+ *      Where the Connected App redirects back to may not be *this* Heroku app but another one.
+ *      The /oauth2/callback handler method in this script on *that* Heroku app will
+ *      determine if the web request needs to be redirected to the original Heroku app.
+ */
 app.get( '/', function( req, res ) {
-
-    // TODO need a separate heroku app that does this oauth dance
-    //      and when it receives the auth code, it needs to pass
-    //      it to the URL extracted from the 'state' url param.
-    //      for security against MITM, the state value should be encrypted, for getting started it'll be plain text.
-    //      this design ensures we only need one connected app in the dev hub that can handle all heroku apps.
-    //      this design is also necessary because 'review apps' clone all the config vars from the 'dev app',
-    //      so it's at this point when this code is running on the 'review app' that we need to look at
-    //      the heroku config vars (env) and determine our url and put that in the state param
 
     var authURL = new URL( oauth2.getAuthorizationUrl( { scope : 'id' } ) );
 
@@ -52,6 +70,7 @@ app.get( '/', function( req, res ) {
         'redirectURL' : 'https://' + process.env.HEROKU_APP_NAME + '.herokuapp.com'
     }));
 
+    console.log( 'redirecting to oauth authorization url', authURL );
     res.redirect( authURL );
 
 });
@@ -73,13 +92,13 @@ app.get( '/oauth2/callback', function( req, res ) {
         'pathname' : req.path,
         'query' : req.query
     }));
-    console.log('requestURL', requestURL);
+    console.log( 'requestURL', requestURL );
 
     var state = JSON.parse( req.query.state );
-    console.log('state', state);
+    console.log( 'state', state );
 
     var redirectURL = new URL( state.redirectURL );
-    console.log('redirectURL', redirectURL);
+    console.log( 'redirectURL', redirectURL );
 
     // if we are on the server where we are redirecting, then do our magic
     // else, redirect on to the intended heroku app
@@ -99,16 +118,32 @@ app.get( '/oauth2/callback', function( req, res ) {
 
                 try {
 
-                    // TODO get from heroku config the org this pipeline's stage represents
-                        // use 'exec' to run sfdx command
+                    var sfdxAuthUrlFilePath = os.tmpdir() + '/sfdxAuthUrl.txt';
+                    fsp.open( sfdxAuthUrlFilePath ).then( function( fileHandle ) {
 
-                    // TODO use sfdx cli to auth into that org
-                    // TODO use sfdx cli to display url to get into the org
-                    // TODO use express to redirect to the org's url
+                        return fileHandle.writeFile( process.env.SFDX_AUTH_URL );
 
-                    // debug, remove these lines later
-                    console.log( 'userInfo', userInfo );
-                    res.redirect( userInfo.url );
+                    }).then( function( result ) {
+
+                        console.log( result );
+                        return exec( 'sfdx force:auth:sfdxurlstore --setalias sfdxorg --sfdxurlfile "' + sfdxAuthUrlFilePath + '" --noprompt --json' );
+
+                    }).then( function( result ) {
+
+                        console.log( result );
+                        return exec( 'sfdx force:org:open --targetusername sfdxorg --urlonly --json' );
+
+                    }).then( function( result ) {
+
+                        console.log( result );
+                        var jsonResult = JSON.parse( result.stdout );
+                        res.redirect( jsonResult.result.url );
+
+                    }).catch( function( err ) {
+
+                        handleError( err, res );
+
+                    });
 
                 } catch ( err ) {
 
@@ -122,13 +157,13 @@ app.get( '/oauth2/callback', function( req, res ) {
 
     } else {
 
-        console.log('redirecting to desired host');
+        console.log( 'redirecting to desired host' );
 
         redirectURL.pathname = '/oauth2/callback';
         redirectURL.searchParams.append( 'state', req.query.state );
         redirectURL.searchParams.append( 'code', req.query.code );
 
-        console.log('redirecting to: ' + redirectURL.toString());
+        console.log( 'redirecting to: ' + redirectURL.toString() );
         res.redirect( redirectURL.toString() );
 
     }
