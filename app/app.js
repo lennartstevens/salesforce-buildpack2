@@ -1,5 +1,7 @@
 'use strict';
 
+console.log( process.env );
+
 // ==============================================
 // Load libraries
 // ==============================================
@@ -24,6 +26,9 @@ const exec = util.promisify(require('child_process').exec);
 // file system utilities
 const fs = require('fs');
 const fsp = fs.promises;
+
+// operating system utilities
+const os = require('os');
 
 
 // Salesforce OAuth Settings (reusable)
@@ -115,24 +120,43 @@ app.get( '/oauth2/callback', function( req, res ) {
 
                 try {
 
-                    var sfdxAuthUrlFilePath = 'sfdxurl';
-                    fsp.open( sfdxAuthUrlFilePath, 'w' ).then( function( fileHandle ) {
+                    var sfdxAuthUrlFilePath = os.tmpdir() + '/sfdxurl';
+                    var sfdxAuthUrlFileData = process.env.SFDX_AUTH_URL;
 
-                        return fileHandle.writeFile( process.env.SFDX_AUTH_URL );
+                    Promise.resolve().then( function() {
+
+                        // if ( !process.env.SFDX_AUTH_URL ) {
+                        //     return new Promise( function( resolve, reject ) {
+                        //         fsp.readFile( )
+                        //     });
+                        // } else {
+                        //     sfdxAuthUrlFileData = process.env.SFDX_AUTH_URL;
+                        // }
+
+                    }).then( function() {
+
+                        console.log( 'opening sfdx auth url file path', sfdxAuthUrlFilePath );
+                        return fsp.open( sfdxAuthUrlFilePath, 'w' );
+
+                    }).then( function( fileHandle ) {
+
+                        console.log( 'fileHandle', fileHandle );
+                        console.log( 'writing sfdx auth url', sfdxAuthUrlFileData );
+                        return fileHandle.writeFile( sfdxAuthUrlFileData );
 
                     }).then( function( result ) {
 
-                        console.log( result );
+                        console.log( 'writeFile result', result );
                         return exec( 'sfdx force:auth:sfdxurl:store --setalias sfdxorg --sfdxurlfile "' + sfdxAuthUrlFilePath + '" --noprompt --json' );
 
                     }).then( function( result ) {
 
-                        console.log( result );
+                        console.log( 'force:auth:sfdxurl:store result', result );
                         return exec( 'sfdx force:org:open --targetusername sfdxorg --urlonly --json' );
 
                     }).then( function( result ) {
 
-                        console.log( result );
+                        console.log( 'force:org:open result', result );
                         var jsonResult = JSON.parse( result.stdout );
                         res.redirect( jsonResult.result.url );
 

@@ -7,7 +7,7 @@ invokeCmd() {
 
 # <DIR> <SFDX_AUTH_URL> <d|s> <alias>
 auth() {
-  
+
   SFDX_AUTH_URL_FILE="$1"
   if [ ! "$2" == "" ]; then
     echo "$2" > "$SFDX_AUTH_URL_FILE"
@@ -23,18 +23,4 @@ tests() {
     invokeCmd "sfdx force:apex:test:run -r $2 -u $3"
   fi
 
-}
-
-# <package_name>
-createPackage2Version() {
-
-  packageName="$1"
-  
-}
-
-# <package_name>
-createPackage2Version() {
-
-  packageName="$1"
-  
 }
