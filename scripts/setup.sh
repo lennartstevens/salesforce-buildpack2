@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -o errexit    # always exit on error
-set -o pipefail   # don't ignore exit codes when piping output
 set -o nounset    # fail on unset variables
 
 #################################################################
@@ -13,7 +12,7 @@ set -o nounset    # fail on unset variables
 # Name of your team (optional)
 HEROKU_TEAM_NAME=""
 
-# Descriptive name for the Heroku app (e.g. gifter)
+# Descriptive name for the Heroku app
 HEROKU_APP_NAME="YOUR_APP_NAME"
 
 # Name of the Heroku apps you'll use
@@ -30,11 +29,13 @@ DEV_USERNAME="DevOrg"
 STAGING_USERNAME="TestOrg"
 PROD_USERNAME="ProdOrg"
 
-# Repository with your code (e.g. wadewegner/GIFter)
-GITHUB_REPO="YOUR_GITHUB_REPO"
-
-# Your package name (e.g. GIFter)
+# Your package name from force:package:list
 PACKAGE_NAME="YOUR_PACKAGE_NAME"
+
+# Repository with your code (username/repo)
+# Only specify a value if you have already connected your GitHub account with Heroku,
+# otherwise connect GitHub to your pipeline via the Heroku Dashboard after the script finishes.
+GITHUB_REPO=
 
 ### Setup script
 
@@ -62,6 +63,13 @@ heroku apps:create $HEROKU_DEV_APP_NAME $HEROKU_TEAM_FLAG
 heroku apps:create $HEROKU_STAGING_APP_NAME $HEROKU_TEAM_FLAG
 heroku apps:create $HEROKU_PROD_APP_NAME $HEROKU_TEAM_FLAG
 
+# Make app name available without need for labs add-on
+# https://stackoverflow.com/questions/12570579/how-to-get-heroku-app-name-url-from-inside-the-app
+# https://devcenter.heroku.com/articles/dyno-metadata
+heroku config:set HEROKU_APP_NAME=$HEROKU_DEV_APP_NAME -a $HEROKU_DEV_APP_NAME
+heroku config:set HEROKU_APP_NAME=$HEROKU_STAGING_APP_NAME -a $HEROKU_STAGING_APP_NAME
+heroku config:set HEROKU_APP_NAME=$HEROKU_PROD_APP_NAME -a $HEROKU_PROD_APP_NAME
+
 # Set the stage (since STAGE isn't required, review apps don't get one)
 heroku config:set STAGE=DEV -a $HEROKU_DEV_APP_NAME
 heroku config:set STAGE=STAGING -a $HEROKU_STAGING_APP_NAME
@@ -88,29 +96,59 @@ heroku config:set SFDX_BUILDPACK_DEBUG=true -a $HEROKU_STAGING_APP_NAME
 heroku config:set SFDX_BUILDPACK_DEBUG=true -a $HEROKU_PROD_APP_NAME
 
 # Setup sfdxUrl's for Dev Hub auth
-devHubSfdxAuthUrl=$(sfdx force:org:display --verbose -u $DEV_HUB_USERNAME --json | jq -r .result.sfdxAuthUrl)
-heroku config:set SFDX_DEV_HUB_AUTH_URL=$devHubSfdxAuthUrl -a $HEROKU_DEV_APP_NAME
-heroku config:set SFDX_DEV_HUB_AUTH_URL=$devHubSfdxAuthUrl -a $HEROKU_STAGING_APP_NAME
-heroku config:set SFDX_DEV_HUB_AUTH_URL=$devHubSfdxAuthUrl -a $HEROKU_PROD_APP_NAME
+devHubSfdxAuthUrl=$(sfdx force:org:display --verbose -u $DEV_HUB_USERNAME | grep "Sfdx Auth Url" | awk '{ print $4 }')
+if [[ "$devHubSfdxAuthUrl" =~ ^force://.*\.salesforce\.com$ ]]; then
+  heroku config:set SFDX_DEV_HUB_AUTH_URL=$devHubSfdxAuthUrl -a $HEROKU_DEV_APP_NAME
+  heroku config:set SFDX_DEV_HUB_AUTH_URL=$devHubSfdxAuthUrl -a $HEROKU_STAGING_APP_NAME
+  heroku config:set SFDX_DEV_HUB_AUTH_URL=$devHubSfdxAuthUrl -a $HEROKU_PROD_APP_NAME
+else
+  echo ""
+  echo "ERROR: Did not find 'Sfdx Auth Url' output from command: sfdx force:org:display --verbose -u $DEV_HUB_USERNAME"
+  echo ""
+  exit 1
+fi
 
-# Setup sfdxUrl's for Org auth
-devSfdxAuthUrl=$(sfdx force:org:display --verbose -u $DEV_USERNAME --json | jq -r .result.sfdxAuthUrl)
-heroku config:set SFDX_AUTH_URL=$devSfdxAuthUrl -a $HEROKU_DEV_APP_NAME
+# Setup sfdxUrl for Dev Org auth
+devSfdxAuthUrl=$(sfdx force:org:display --verbose -u $DEV_USERNAME | grep "Sfdx Auth Url" | awk '{ print $4 }')
+if [[ "$devSfdxAuthUrl" =~ ^force://.*\.salesforce\.com$ ]]; then
+  heroku config:set SFDX_AUTH_URL=$devSfdxAuthUrl -a $HEROKU_DEV_APP_NAME
+else
+  echo ""
+  echo "ERROR: Did not find 'Sfdx Auth Url' output from command: sfdx force:org:display --verbose -u $DEV_USERNAME"
+  echo ""
+  exit 1
+fi
 
-stagingSfdxAuthUrl=$(sfdx force:org:display --verbose -u $STAGING_USERNAME --json | jq -r .result.sfdxAuthUrl)
-heroku config:set SFDX_AUTH_URL=$stagingSfdxAuthUrl -a $HEROKU_STAGING_APP_NAME
+# Setup sfdxUrl for Staging Org auth
+stagingSfdxAuthUrl=$(sfdx force:org:display --verbose -u $STAGING_USERNAME | grep "Sfdx Auth Url" | awk '{ print $4 }')
+if [[ "$stagingSfdxAuthUrl" =~ ^force://.*\.salesforce\.com$ ]]; then
+  heroku config:set SFDX_AUTH_URL=$stagingSfdxAuthUrl -a $HEROKU_STAGING_APP_NAME
+else
+  echo ""
+  echo "ERROR: Did not find 'Sfdx Auth Url' output from command: sfdx force:org:display --verbose -u $STAGING_USERNAME"
+  echo ""
+  exit 1
+fi
 
-prodSfdxAuthUrl=$(sfdx force:org:display --verbose -u $PROD_USERNAME --json | jq -r .result.sfdxAuthUrl)
-heroku config:set SFDX_AUTH_URL=$prodSfdxAuthUrl -a $HEROKU_PROD_APP_NAME
+# Setup sfdxUrl for Prod Org auth
+prodSfdxAuthUrl=$(sfdx force:org:display --verbose -u $PROD_USERNAME | grep "Sfdx Auth Url" | awk '{ print $4 }')
+if [[ "$prodSfdxAuthUrl" =~ ^force://.*\.salesforce\.com$ ]]; then
+  heroku config:set SFDX_AUTH_URL=$prodSfdxAuthUrl -a $HEROKU_PROD_APP_NAME
+else
+  echo ""
+  echo "ERROR: Did not find 'Sfdx Auth Url' output from command: sfdx force:org:display --verbose -u $PROD_USERNAME"
+  echo ""
+  exit 1
+fi
 
 # Add buildpacks to apps (to use latest remove version info)
 heroku buildpacks:add -i 1 https://github.com/heroku/salesforce-cli-buildpack#v3 -a $HEROKU_DEV_APP_NAME
 heroku buildpacks:add -i 1 https://github.com/heroku/salesforce-cli-buildpack#v3 -a $HEROKU_STAGING_APP_NAME
 heroku buildpacks:add -i 1 https://github.com/heroku/salesforce-cli-buildpack#v3 -a $HEROKU_PROD_APP_NAME
 
-heroku buildpacks:add -i 2 https://github.com/heroku/salesforce-buildpack#v2 -a $HEROKU_DEV_APP_NAME
-heroku buildpacks:add -i 2 https://github.com/heroku/salesforce-buildpack#v2 -a $HEROKU_STAGING_APP_NAME
-heroku buildpacks:add -i 2 https://github.com/heroku/salesforce-buildpack#v2 -a $HEROKU_PROD_APP_NAME
+heroku buildpacks:add -i 2 https://github.com/douglascayers/salesforce-buildpack2 -a $HEROKU_DEV_APP_NAME
+heroku buildpacks:add -i 2 https://github.com/douglascayers/salesforce-buildpack2 -a $HEROKU_STAGING_APP_NAME
+heroku buildpacks:add -i 2 https://github.com/douglascayers/salesforce-buildpack2 -a $HEROKU_PROD_APP_NAME
 
 # Create Pipeline
 heroku pipelines:create $HEROKU_PIPELINE_NAME -a $HEROKU_DEV_APP_NAME -s development $HEROKU_TEAM_FLAG
@@ -125,6 +163,15 @@ heroku ci:config:set -p $HEROKU_PIPELINE_NAME SFDX_CREATE_PACKAGE_VERSION=false
 heroku ci:config:set -p $HEROKU_PIPELINE_NAME SFDX_PACKAGE_NAME="$PACKAGE_NAME"
 heroku ci:config:set -p $HEROKU_PIPELINE_NAME HEROKU_APP_NAME="$HEROKU_APP_NAME"
 
-# Setup your pipeline
-heroku pipelines:connect $HEROKU_PIPELINE_NAME --repo $GITHUB_REPO
-heroku reviewapps:enable -p $HEROKU_PIPELINE_NAME -a $HEROKU_DEV_APP_NAME --autodeploy --autodestroy
+# Connect Pipeline to GitHub repo
+# (will only work if you've already authorized Heroku's access to your GitHub account)
+if [ ! "$GITHUB_REPO" == "" ]; then
+  heroku pipelines:connect $HEROKU_PIPELINE_NAME --repo $GITHUB_REPO
+  heroku reviewapps:enable -p $HEROKU_PIPELINE_NAME -a $HEROKU_DEV_APP_NAME --autodeploy --autodestroy
+fi
+
+echo ""
+echo "Heroku pipelines setup script completed"
+echo ""
+echo "If you need to undo these changes, run ./destroy$HEROKU_APP_NAME.sh"
+echo ""

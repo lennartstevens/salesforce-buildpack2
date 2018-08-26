@@ -72,7 +72,7 @@ app.get( '/', function( req, res ) {
         'redirectURL' : 'https://' + process.env.HEROKU_APP_NAME + '.herokuapp.com'
     }));
 
-    console.log( 'redirecting to oauth authorization url', authURL );
+    console.log( 'Redirecting to oauth authorization url', authURL );
     res.redirect( authURL );
 
 });
@@ -94,13 +94,9 @@ app.get( '/oauth2/callback', function( req, res ) {
         'pathname' : req.path,
         'query' : req.query
     }));
-    console.log( 'requestURL', requestURL );
 
     var state = JSON.parse( req.query.state );
-    console.log( 'state', state );
-
     var redirectURL = new URL( state.redirectURL );
-    console.log( 'redirectURL', redirectURL );
 
     // if we are on the server where we are redirecting, then do our magic
     // else, redirect on to the intended heroku app
@@ -135,7 +131,6 @@ app.get( '/oauth2/callback', function( req, res ) {
                             // The 'bin/compile' script of the buildpack, for review apps,
                             // writes the sfdx auth url of the scratch org in a file named
                             // after the heroku app with a 'ra-' prefix.
-                            console.log( 'reading buildpack created file for sfdx auth url' );
                             return fsp.readFile( `vendor/sfdx/ra-${process.env.HEROKU_APP_NAME}`, { 'encoding': 'UTF-8' } ).then( function( fileData ) {
                                 sfdxAuthUrlFileData = fileData;
                             });
@@ -143,27 +138,27 @@ app.get( '/oauth2/callback', function( req, res ) {
 
                     }).then( function() {
 
-                        console.log( 'opening sfdx auth url for writing: ' + sfdxAuthUrlFilePath );
+                        // get file handle so we can write the salesforce org's auth url into it for later step
                         return fsp.open( sfdxAuthUrlFilePath, 'w' );
 
                     }).then( function( fileHandle ) {
 
-                        console.log( 'writing sfdx auth url: ' + sfdxAuthUrlFileData );
+                        // write the auth url to file to be used with the force:auth:sfdxurl:store command
                         return fileHandle.writeFile( sfdxAuthUrlFileData );
 
                     }).then( function() {
 
-                        console.log( 'storing sfdx auth url with cli' );
+                        // authenticate with cli so we can get a url to redirect user to
                         return exec( 'sfdx force:auth:sfdxurl:store --setalias sfdxorg --sfdxurlfile "' + sfdxAuthUrlFilePath + '" --noprompt --json' );
 
                     }).then( function( result ) {
 
-                        console.log( 'getting login url with cli' );
+                        // obtain the url to redirect user into the salesforce org without knowing the credentials
                         return exec( 'sfdx force:org:open --targetusername sfdxorg --urlonly --json' );
 
                     }).then( function( result ) {
 
-                        console.log( result );
+                        // redirect user into the salesforce org, voila!
                         var jsonResult = JSON.parse( result.stdout );
                         res.redirect( jsonResult.result.url );
 
@@ -185,13 +180,11 @@ app.get( '/oauth2/callback', function( req, res ) {
 
     } else {
 
-        console.log( 'redirecting to desired host' );
-
         redirectURL.pathname = '/oauth2/callback';
         redirectURL.searchParams.append( 'state', req.query.state );
         redirectURL.searchParams.append( 'code', req.query.code );
 
-        console.log( 'redirecting to: ' + redirectURL.toString() );
+        console.log( 'Redirecting to desired host: ' + redirectURL.toString() );
         res.redirect( redirectURL.toString() );
 
     }
