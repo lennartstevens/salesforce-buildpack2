@@ -120,7 +120,7 @@ app.get( '/oauth2/callback', function( req, res ) {
 
                 try {
 
-                    var sfdxAuthUrlFilePath = os.tmpdir() + '/sfdxurl.txt';
+                    var sfdxAuthUrlFilePath = 'vendor/sfdx/open-app-sfdxurl';
                     var sfdxAuthUrlFileData = process.env.SFDX_AUTH_URL;
 
                     console.log( 'sfdxAuthUrlFilePath=' + sfdxAuthUrlFilePath );
@@ -129,11 +129,14 @@ app.get( '/oauth2/callback', function( req, res ) {
                     Promise.resolve().then( function() {
 
                         if ( !sfdxAuthUrlFileData ) {
-                            // for review apps, the 'bin/compile' script of the buildpack
-                            // writes the sfdx auth url for the scratch org in a file named
-                            // named after the heroku app with a 'ra-' prefix
+                            // Review apps are created and destroyed automatically, so we
+                            // never configure them with a SFDX_AUTH_URL environment variable.
+                            // If we detect there is no SFDX_AUTH_URL, then look for file on disk.
+                            // The 'bin/compile' script of the buildpack, for review apps,
+                            // writes the sfdx auth url of the scratch org in a file named
+                            // after the heroku app with a 'ra-' prefix.
                             console.log( 'reading buildpack created file for sfdx auth url' );
-                            return fsp.readFile( `ra-${process.env.HEROKU_APP_NAME}`, { 'encoding': 'UTF-8' } ).then( function( fileData ) {
+                            return fsp.readFile( `vendor/sfdx/ra-${process.env.HEROKU_APP_NAME}`, { 'encoding': 'UTF-8' } ).then( function( fileData ) {
                                 sfdxAuthUrlFileData = fileData;
                             });
                         }

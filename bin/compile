@@ -128,7 +128,6 @@ if [ "$STAGE" == "" ]; then
 
   # Store creds for scratch org
   scratchSfdxAuthUrl=$(sfdx force:org:display --verbose -u $TARGET_SCRATCH_ORG_ALIAS --json | jq -r .result.sfdxAuthUrl)
-  export SFDX_AUTH_URL=scratchSfdxAuthUrl
   debug "scratchSfdxAuthUrl: $scratchSfdxAuthUrl"
 
   # Store creds in file reflecting the source version (if not running CI)
