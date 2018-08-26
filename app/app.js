@@ -119,14 +119,14 @@ app.get( '/oauth2/callback', function( req, res ) {
                 try {
 
                     var sfdxAuthUrlFilePath = os.tmpdir() + '/sfdxAuthUrl.txt';
-                    fsp.open( sfdxAuthUrlFilePath ).then( function( fileHandle ) {
+                    fsp.open( sfdxAuthUrlFilePath, 'w' ).then( function( fileHandle ) {
 
                         return fileHandle.writeFile( process.env.SFDX_AUTH_URL );
 
                     }).then( function( result ) {
 
                         console.log( result );
-                        return exec( 'sfdx force:auth:sfdxurlstore --setalias sfdxorg --sfdxurlfile "' + sfdxAuthUrlFilePath + '" --noprompt --json' );
+                        return exec( 'sfdx force:auth:sfdxurl:store --setalias sfdxorg --sfdxurlfile "' + sfdxAuthUrlFilePath + '" --noprompt --json' );
 
                     }).then( function( result ) {
 
