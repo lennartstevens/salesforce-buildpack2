@@ -25,9 +25,6 @@ const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
 const fsp = fs.promises;
 
-// operating system-related utilities
-const os = require('os');
-
 
 // Salesforce OAuth Settings (reusable)
 // ==============================================
@@ -118,7 +115,7 @@ app.get( '/oauth2/callback', function( req, res ) {
 
                 try {
 
-                    var sfdxAuthUrlFilePath = os.tmpdir() + '/sfdxAuthUrl.txt';
+                    var sfdxAuthUrlFilePath = 'sfdxurl';
                     fsp.open( sfdxAuthUrlFilePath, 'w' ).then( function( fileHandle ) {
 
                         return fileHandle.writeFile( process.env.SFDX_AUTH_URL );
