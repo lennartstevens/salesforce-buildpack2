@@ -203,6 +203,6 @@ get logged in to your production Salesforce environment.
     - Update the `OAUTH_SALESFORCE_CLIENT_ID`, `OAUTH_SALESFORCE_CLIENT_SECRET`, `OAUTH_SALESFORCE_LOGIN_URL`, and `OAUTH_SALESFORCE_REDIRECT_URI` config
       vars for each Heroku app in the development, staging, and production stages.
 
-Note: You could use the same Connected App oauth settings for each Heroku app, or you can use different ones to authorize
-different sets of users to be able to use the "Open app" button for one-click login to the different Salesforce environments.
-For example, one Connected App for development and staging but perhaps a different one for production, with perhaps fewer authorized users.
+    Note: You could use the same Connected App oauth settings for each Heroku app, or you can use different ones to authorize
+    different sets of users to be able to use the "Open app" button for one-click login to the different Salesforce environments.
+    For example, one Connected App for development and staging but perhaps a different one for production, with perhaps fewer authorized users.
