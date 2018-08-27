@@ -196,7 +196,7 @@ get logged in to your production Salesforce environment.
     - Click **Save**
     - Click **Manage** then click **Edit Policies**
     - For Permitted Users field, select **Admin approved users are pre-authorized** then click **Save**
-    - Scroll down to the **Profiles** or **Permission Sets** related lists and assign as appropriate to designate which users will be authorized
+    - Scroll down to the **Profiles** and **Permission Sets** related lists and assign as appropriate to designate which users will be authorized
 
 2. Set the OAuth Config Vars in Heroku
 
