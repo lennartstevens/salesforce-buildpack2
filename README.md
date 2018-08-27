@@ -191,7 +191,7 @@ get logged in to your production Salesforce environment.
 1. Create a Connected App
 
     - Select **Enable OAuth Settings**
-    - Enter the **Callback URL** to one of your Heroku apps in the format https://YOUR-APP-NAME.herokuapp.com/oauth2/callback
+    - Enter the **Callback URL** to one of your Heroku apps in the format https://yourAppName.herokuapp.com/oauth2/callback
     - Select the OAuth scope **Access your basic information**
     - Click **Save**
     - Click **Manage** then click **Edit Policies**
