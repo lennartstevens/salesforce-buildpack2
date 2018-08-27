@@ -190,18 +190,18 @@ get logged in to your production Salesforce environment.
 
 1. Create a Connected App
 
-  - Select **Enable OAuth Settings**
-  - Enter the **Callback URL** to one of your Heroku apps in the format https://YOUR-APP-NAME.herokuapp.com/oauth2/callback
-  - Select the OAuth scope **Access your basic information**
-  - Click **Save**
-  - Click **Manage** then click **Edit Policies**
-  - For Permitted Users field, select **Admin approved users are pre-authorized** then click **Save**
-  - Scroll down to the **Profiles** or **Permission Sets** related lists and assign as appropriate to designate which users will be authorized
+    - Select **Enable OAuth Settings**
+    - Enter the **Callback URL** to one of your Heroku apps in the format https://YOUR-APP-NAME.herokuapp.com/oauth2/callback
+    - Select the OAuth scope **Access your basic information**
+    - Click **Save**
+    - Click **Manage** then click **Edit Policies**
+    - For Permitted Users field, select **Admin approved users are pre-authorized** then click **Save**
+    - Scroll down to the **Profiles** or **Permission Sets** related lists and assign as appropriate to designate which users will be authorized
 
 2. Set the OAuth Config Vars in Heroku
 
-  - Update the `OAUTH_SALESFORCE_CLIENT_ID`, `OAUTH_SALESFORCE_CLIENT_SECRET`, `OAUTH_SALESFORCE_LOGIN_URL`, and `OAUTH_SALESFORCE_REDIRECT_URI` config
-    vars for each Heroku app in the development, staging, and production stages.
+    - Update the `OAUTH_SALESFORCE_CLIENT_ID`, `OAUTH_SALESFORCE_CLIENT_SECRET`, `OAUTH_SALESFORCE_LOGIN_URL`, and `OAUTH_SALESFORCE_REDIRECT_URI` config
+      vars for each Heroku app in the development, staging, and production stages.
 
 Note: You could use the same Connected App oauth settings for each Heroku app, or you can use different ones to authorize
 different sets of users to be able to use the "Open app" button for one-click login to the different Salesforce environments.
