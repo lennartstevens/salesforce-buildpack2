@@ -182,9 +182,9 @@ get logged in to your production Salesforce environment.
 
 2. The Node.js web app bundled with the Salesforce buildpack redirects user to OAuth authorization page of your Connected App
 
-3. Your Salesforce Connected App redirects the authorized user back to one of the Heroku apps in your pipeline (does not matter which one)
+3. Your Salesforce Connected App redirects the authorized user back to one of the Heroku apps in your pipeline (does not matter which one, only that it also has the Salesforce buildpack deployed)
 
-4. The Node.js web app uses `force:org:open --urlonly` CLI command to redirect user into the org that the Heroku app (step 1) represents
+4. The Node.js web app uses `force:org:open --urlonly` CLI command to redirect user into the org that the Heroku app in step 1 represents, regardless of which Heroku app is used in step 3
 
 ### Setup
 
