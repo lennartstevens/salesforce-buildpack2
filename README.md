@@ -7,7 +7,7 @@ It uses [https://github.com/heroku/salesforce-cli-buildpack](https://github.com/
 Below you'll find information on the **requirements** in your Salesforce project repository and the **config vars** required to operate the buildpack.
 To painlessly setup your Heroku Pipeline, use this [setup script](scripts/setup.sh).
 
-To see an example Salesforce project that's configured to use Heroku Pipelines and CI, see [salesforce-dx-pipeline-sample](https://github.com/TrailheadTechnicalCurriculum/salesforce-dx-pipeline-sample).
+To see an example Salesforce project that's configured to use Heroku Pipelines and CI, see [salesforce-dx-pipeline-sample](https://github.com/douglascayers/salesforce-dx-pipeline-sample2).
 
 ## Requirements
 
