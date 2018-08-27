@@ -51,6 +51,9 @@ This buildpack requires the following to be present in the Salesforce app reposi
         },
         "OAUTH_SALESFORCE_LOGIN_URL" : {
           "required": true
+        },
+        "OAUTH_SALESFORCE_REDIRECT_URI" : {
+          "required": true
         }
       },
       ```
@@ -131,6 +134,14 @@ Only the config vars whose names are listed in the `env` property of `app.json` 
 
 - `SFDX_AUTH_URL`: Provides credentials to the buildpack for connecting to the org used by Development (typically a dev integration environment). You can get this value by running `sfdx force:org:display --verbose --json` against your org and grabbing the `sfdxAuthUrl`.
 
+- `OAUTH_SALESFORCE_CLIENT_ID`: A Connected App consumer key. See the "One-Click Login" section in this document.
+
+- `OAUTH_SALESFORCE_CLIENT_SECRET`: A Connected App consumer secret. See the "One-Click Login" section in this document.
+
+- `OAUTH_SALESFORCE_LOGIN_URL`: The login URL to the org with the Connected App. See the "One-Click Login" section in this document.
+
+- `OAUTH_SALESFORCE_REDIRECT_URI`: The Heroku app URL to redirect back to, which has this buildpack deployed. See the "One-Click Login" section in this document.
+
 ### Staging
 
 These values are the same as development stage but with the following considerations.
@@ -148,3 +159,50 @@ These values are the same as staging stage but with the following considerations
 - `STAGE=PROD`: Instructs the buildpack that this app stage is PROD.
 
 - `SFDX_AUTH_URL`: This should map to your production environment.
+
+## One-Click Login to Salesforce Orgs via Heroku App URLs
+
+Reminder, Salesforce metadata deployed to Heroku does not result in a runnable app on the Heroku platform (yet?).
+So by default, clicking the "Open App" button on a Heroku app, or navigating to its URL (e.g. https://yourappname.herokuapp.com)
+would result in an application error page. To get into the underlying Salesforce org, you would still need to know its credentials.
+
+For your convenience, the Salesforce buildpack supports one-click access to the Salesforce environments of your pipeline when you click the "Open App" button in Heroku
+or navigate to the Heroku app's URL by bundling a simple [Node.js web app](app/app.js). This is very useful with review apps
+because those are scratch orgs that get created automatically by the buildpack and no one would have their credentials.
+The web app accomplishes this by redirecting the user to the URL retrieved from the `force:org:open --urlonly` command.
+
+Since a Heroku app's URL can be public, then as a security measure the Salesforce buildpack's web app
+uses OAuth (with a Connected App you provide) to determine if the requestor is authorized for the buildpack to auto log them in to the
+Salesforce org that the Heroku app represents. This way, a Malicious User can't simply know your production Heroku app URL and simply
+get logged in to your production Salesforce environment.
+
+### Sequence
+
+1. User clicks "Open app" button of a Heroku app where the Salesforce buildpack is deployed
+
+2. The Node.js web app bundled with the Salesforce buildpack redirects user to OAuth authorization page of your Connected App
+
+3. Your Salesforce Connected App redirects the authorized user back to one of the Heroku apps in your pipeline (does not matter which one)
+
+4. The Node.js web app uses `force:org:open --urlonly` CLI command to redirect user into the org that the Heroku app (step 1) represents
+
+### Setup
+
+1. Create a Connected App
+
+  - Select **Enable OAuth Settings**
+  - Enter the **Callback URL** to one of your Heroku apps in the format https://YOUR-APP-NAME.herokuapp.com/oauth2/callback
+  - Select the OAuth scope **Access your basic information**
+  - Click **Save**
+  - Click **Manage** then click **Edit Policies**
+  - For Permitted Users field, select **Admin approved users are pre-authorized** then click **Save**
+  - Scroll down to the **Profiles** or **Permission Sets** related lists and assign as appropriate to designate which users will be authorized
+
+2. Set the OAuth Config Vars in Heroku
+
+  - Update the `OAUTH_SALESFORCE_CLIENT_ID`, `OAUTH_SALESFORCE_CLIENT_SECRET`, `OAUTH_SALESFORCE_LOGIN_URL`, and `OAUTH_SALESFORCE_REDIRECT_URI` config
+    vars for each Heroku app in the development, staging, and production stages.
+
+Note: You could use the same Connected App oauth settings for each Heroku app, or you can use different ones to authorize
+different sets of users to be able to use the "Open app" button for one-click login to the different Salesforce environments.
+For example, one Connected App for development and staging but perhaps a different one for production, with perhaps fewer authorized users.
