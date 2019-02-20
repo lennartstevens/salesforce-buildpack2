@@ -22,6 +22,7 @@ header "Running release.sh"
 
 # Setup local paths
 log "Setting up paths ..."
+log "@Lennart : This script is modified by Lennart, Include force of test runs in the deployment and revert changes on failure." 
 
 setup_dirs "."
 
@@ -147,7 +148,7 @@ if [ ! "$STAGE" == "" ]; then
     then
 
       invokeCmd "sfdx force:source:convert -d mdapiout"
-      invokeCmd "sfdx force:mdapi:deploy -d mdapiout --wait 1000 -u $TARGET_SCRATCH_ORG_ALIAS"
+      invokeCmd "sfdx force:mdapi:deploy -l RunLocalTests—All -d mdapiout --wait 1000 -u $TARGET_SCRATCH_ORG_ALIAS"
 
     else
 
